@@ -1,5 +1,6 @@
 #include "mbed.h"
 #include "nRF24L01P.h"
+#include <cstdio>
 
 #define MOSI_PIN    D11
 #define MISO_PIN    D12
@@ -53,7 +54,7 @@ int main() {
     while (1) {
 
         // If we've received anything over the host serial link...
-        if ( pc.readable() ) {
+        if (pc.readable()) {
 
             // ...add it to the transmit buffer
             txData[txDataCnt++] = pc.getc();
@@ -63,6 +64,7 @@ int main() {
 
                 // Send the transmitbuffer via the nRF24L01+
                 my_nrf24l01p.write( NRF24L01P_PIPE_P0, txData, txDataCnt );
+                printf("Send %s \r\n", txData);
 
                 txDataCnt = 0;
             }
