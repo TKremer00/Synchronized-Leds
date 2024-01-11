@@ -13,6 +13,8 @@ enum Direction {
 class MCP {
 
 public:
+    static constexpr uint8_t AMOUNT_OF_LEDS = 5;
+    
     MCP();
 
     bool next_button_pressed();
@@ -42,7 +44,6 @@ private:
 
     uint8_t m_current_lighted_led = 0;
 
-    static constexpr uint8_t AMOUNT_OF_LEDS = 5;
     static constexpr uint8_t DEBOUNCE_TIME_MS = 50;
 };
 

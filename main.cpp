@@ -21,6 +21,27 @@
 //         // Toggle LED1 (to help debug Host -> nRF24L01+ communication)
 //     }
 // }
+#define MAX_ACKNOWLEDGMENT_TIMEOUT_S    5
+
+bool send_pin_update(NRF24& nrf, uint8_t new_pin_number) {
+
+    nrf.send_led_update(new_pin_number);
+
+    Timer timer;
+    timer.start();
+
+    while(timer.read() < MAX_ACKNOWLEDGMENT_TIMEOUT_S){
+        uint8_t received_pin_number = nrf.read_acknowledgement();
+
+        if(received_pin_number != std::numeric_limits<uint8_t>::max()) {
+            return received_pin_number == new_pin_number;
+        }        
+    }
+
+    printf("No acknowledgement receive within %ds \r\n", MAX_ACKNOWLEDGMENT_TIMEOUT_S);
+
+    return false;
+}
 
 int main() {
     Serial pc(USBTX, USBRX); // tx, rx
@@ -31,24 +52,35 @@ int main() {
     char rxData[NRF24::TRANSFER_SIZE];
     int txDataCnt = 0;
     int rxDataCnt = 0;
+    
+    // TODO: this does hardfault some time, need to look into it.
 
     while (1) {
         if(mcp.next_button_pressed()) {
             printf("NEXT Pressed \r\n");
-            mcp.turn_on_led(mcp.get_next_led(Direction::FORWARDS));
-            wait_ns(500);
+            
+            auto new_pin_number = mcp.get_next_led(Direction::FORWARDS); 
+            if(send_pin_update(nrf, new_pin_number)) {
+                mcp.turn_on_led(new_pin_number);
+            }
         }
 
         if(mcp.previous_button_pressed()) {
             printf("PREVIOUS Pressed \r\n");
-            mcp.turn_on_led(mcp.get_next_led(Direction::BACKWARDS));
-            wait_ns(500);
+
+            auto new_pin_number = mcp.get_next_led(Direction::BACKWARDS);
+            if(send_pin_update(nrf, new_pin_number)){
+                mcp.turn_on_led(new_pin_number);
+            }
         }
 
-        // If we've received anything in the nRF24L01+...
-        if(nrf.read_incoming_data(rxData, sizeof(rxData))) {
-            // TODO: we read some bytes, what now....
-            printf("%s \r\n", rxData);
+        uint8_t received_bytes = nrf.receive_led_update();
+        if(received_bytes != std::numeric_limits<uint8_t>::max()) {
+            // we got a pin update, now we need to send it back
+            if(nrf.send_led_update(received_bytes) == 0) {
+                // we did send the led update back as acknowledgment, and we did not error on sending.
+                mcp.turn_on_led(received_bytes);
+            }
         }
     }
 }

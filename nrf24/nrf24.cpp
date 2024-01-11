@@ -1,5 +1,6 @@
 #include "nrf24.h"
 
+
 #define MOSI_PIN    D11
 #define MISO_PIN    D12
 #define SCK_PIN     D13
@@ -27,21 +28,23 @@ NRF24::NRF24()
     m_nrf_comm.enable();
 }
 
-bool NRF24::read_incoming_data(char rxData[], int size) {
-    MBED_ASSERT(size == TRANSFER_SIZE);
-
-    if(!m_nrf_comm.readable()) {
-        return false;
-    }
-
-    m_nrf_comm.read(NRF24L01P_PIPE_P0, rxData, size);
-    printf("RXDATA in the read_incoming_data function %s \r\n", rxData);
-
-    return true;
+uint8_t NRF24::read_acknowledgement() {
+    return receive_incoming_data();
 }
 
-void NRF24::send_led_update(uint8_t pin) {
-    printf("TODO: send the pin number to the other nrf, and acknowledge that message before updating my own led");
+int NRF24::send_led_update(uint8_t pin) {
+    // NOTE: this could always fail, 
+    // but we want to make sure we don't 
+    // send more bytes than the NRF can read
+    MBED_ASSERT(sizeof(pin) <= TRANSFER_SIZE);
+
+    char pin_number = static_cast<char>(pin);
+
+    return m_nrf_comm.write(NRF24L01P_PIPE_P0, &pin_number, sizeof(pin));
+}
+
+uint8_t NRF24::receive_led_update() {
+    return receive_incoming_data();
 }
 
 void NRF24::print_nrf_info() {
@@ -51,6 +54,38 @@ void NRF24::print_nrf_info() {
     printf( "nRF24L01+ Data Rate    : %d kbps\r\n", m_nrf_comm.getAirDataRate() );
     printf( "nRF24L01+ TX Address   : 0x%010llX\r\n", m_nrf_comm.getTxAddress() );
     printf( "nRF24L01+ RX Address   : 0x%010llX\r\n", m_nrf_comm.getRxAddress() );
+}
+
+uint8_t NRF24::number_from_char_array(char data[], int size) {
+    uint8_t number = 0;
+
+    printf("we are here, with size %d \r\n", size);
+
+    for (int i = size; i >= 0; i--)
+    {
+        printf("we in loop %d \r\n", i);
+        number |= data[i] << i;
+    }
+
+    return number;
+}
+
+uint8_t NRF24::receive_incoming_data() {
+    // FIXME: check the crc, to ensure the data is valid
+    char rxData[TRANSFER_SIZE];
+    
+    if(!m_nrf_comm.readable()) {
+        return std::numeric_limits<uint8_t>::max();
+    }
+
+    m_nrf_comm.read(NRF24L01P_PIPE_P0, rxData, TRANSFER_SIZE);
+    
+
+    auto number = number_from_char_array(rxData, TRANSFER_SIZE);
+
+    printf("Received: %d \r\n", number);
+
+    return number;
 }
 
 void NRF24::send_data(int pipe, char *data, int count) {
