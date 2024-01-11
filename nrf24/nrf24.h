@@ -3,20 +3,11 @@
 
 #include "nRF24L01P.h"
 
-// The nRF24L01+ supports transfers from 1 to 32 bytes, but Sparkfun's
-// "Nordic Serial Interface Board" (http://www.sparkfun.com/products/9019)
-// only handles 4 byte transfers in the ATMega code.
-#define MOSI_PIN    D11
-#define MISO_PIN    D12
-#define SCK_PIN     D13
-#define CSN_PIN     D8 // D10 <- MCP
-#define CE_PIN      D9
-#define IRQ_PIN     D7
-
-
 class NRF24 {
-
 public:
+    // The nRF24L01+ supports transfers from 1 to 32 bytes, but Sparkfun's
+    // "Nordic Serial Interface Board" (http://www.sparkfun.com/products/9019)
+    // only handles 4 byte transfers in the ATMega code.
     static constexpr int TRANSFER_SIZE = 4;
 
     NRF24();

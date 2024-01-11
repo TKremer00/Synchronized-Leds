@@ -1,5 +1,12 @@
 #include "nrf24.h"
 
+#define MOSI_PIN    D11
+#define MISO_PIN    D12
+#define SCK_PIN     D13
+#define CSN_PIN     D8
+#define CE_PIN      D9
+#define IRQ_PIN     D7
+
 NRF24::NRF24()
     : m_nrf_comm(MOSI_PIN, MISO_PIN, SCK_PIN, CSN_PIN, CE_PIN, IRQ_PIN)
 {
@@ -21,16 +28,14 @@ NRF24::NRF24()
 }
 
 bool NRF24::read_incoming_data(char rxData[], int size) {
-    if(size != TRANSFER_SIZE) {
-        error("Transfer size does not match the intended transfer size of the nRF24L01P");
-    }
+    MBED_ASSERT(size == TRANSFER_SIZE);
 
     if(!m_nrf_comm.readable()) {
         return false;
     }
 
     m_nrf_comm.read(NRF24L01P_PIPE_P0, rxData, size);
-    printf("RXDATA in the read_incomming_data function %s \r\n", rxData);
+    printf("RXDATA in the read_incoming_data function %s \r\n", rxData);
 
     return true;
 }
