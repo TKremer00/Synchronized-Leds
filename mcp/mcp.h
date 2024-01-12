@@ -10,6 +10,16 @@ enum Direction {
     BACKWARDS,
 };
 
+enum PinNumber {
+    // 255    = 0b11111111
+    PIN_ONE   = 0b00001010,
+    PIN_TWO   = 0b00010100,
+    PIN_THREE = 0b00011110,
+    PIN_FOUR  = 0b00101000,
+    PIN_FIVE  = 0b00110010,
+    PIN_SIX   = 0b00111100,
+};
+
 class MCP {
 
 public:
@@ -21,11 +31,11 @@ public:
 
     bool previous_button_pressed();
 
-    void turn_on_led(uint8_t pin_number);
+    void turn_on_led(PinNumber pin_number);
 
-    uint8_t get_current_lighted_led();
+    PinNumber get_current_lighted_led();
 
-    uint8_t get_next_led(Direction direction);
+    PinNumber get_next_led(Direction direction);
 
 private:
     void reset_registers();
@@ -42,7 +52,7 @@ private:
     bool m_previous_button_state = false;
     bool m_next_button_state = false;
 
-    uint8_t m_current_lighted_led = 0;
+    PinNumber m_current_lighted_led = PinNumber::PIN_ONE;
 
     static constexpr uint8_t DEBOUNCE_TIME_MS = 50;
 };

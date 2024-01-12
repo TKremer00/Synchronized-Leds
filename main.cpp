@@ -21,11 +21,14 @@
 //         // Toggle LED1 (to help debug Host -> nRF24L01+ communication)
 //     }
 // }
-#define MAX_ACKNOWLEDGMENT_TIMEOUT_S    5
+#define MAX_ACKNOWLEDGMENT_TIMEOUT_S    10
+#define SEND_DELAY_S    1000
 
 bool send_pin_update(NRF24& nrf, uint8_t new_pin_number) {
 
     nrf.send_led_update(new_pin_number);
+
+    ThisThread::sleep_for(SEND_DELAY_S);
 
     Timer timer;
     timer.start();
@@ -76,10 +79,12 @@ int main() {
 
         uint8_t received_bytes = nrf.receive_led_update();
         if(received_bytes != std::numeric_limits<uint8_t>::max()) {
+            ThisThread::sleep_for(SEND_DELAY_S * 2);
             // we got a pin update, now we need to send it back
-            if(nrf.send_led_update(received_bytes) == 0) {
-                // we did send the led update back as acknowledgment, and we did not error on sending.
-                mcp.turn_on_led(received_bytes);
+            auto bytes_written = nrf.send_led_update(received_bytes);
+            if(bytes_written > 0) {
+                // we did send the led update back as acknowledgment, and we did send more than 0 bytes.
+                mcp.turn_on_led(static_cast<PinNumber>(received_bytes));
             }
         }
     }

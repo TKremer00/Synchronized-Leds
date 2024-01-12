@@ -36,9 +36,11 @@ int NRF24::send_led_update(uint8_t pin) {
     // NOTE: this could always fail, 
     // but we want to make sure we don't 
     // send more bytes than the NRF can read
-    MBED_ASSERT(sizeof(pin) <= TRANSFER_SIZE);
+    MBED_ASSERT(sizeof(pin) == TRANSFER_SIZE);
 
     char pin_number = static_cast<char>(pin);
+
+    printf("Sending pin_number %d \r\n", pin_number);
 
     return m_nrf_comm.write(NRF24L01P_PIPE_P0, &pin_number, sizeof(pin));
 }
@@ -59,11 +61,8 @@ void NRF24::print_nrf_info() {
 uint8_t NRF24::number_from_char_array(char data[], int size) {
     uint8_t number = 0;
 
-    printf("we are here, with size %d \r\n", size);
-
-    for (int i = size; i >= 0; i--)
+    for (int i = 0; i < size; i++) 
     {
-        printf("we in loop %d \r\n", i);
         number |= data[i] << i;
     }
 
@@ -77,7 +76,7 @@ uint8_t NRF24::receive_incoming_data() {
     if(!m_nrf_comm.readable()) {
         return std::numeric_limits<uint8_t>::max();
     }
-
+    printf("Receiving bytes \r\n");
     m_nrf_comm.read(NRF24L01P_PIPE_P0, rxData, TRANSFER_SIZE);
     
 

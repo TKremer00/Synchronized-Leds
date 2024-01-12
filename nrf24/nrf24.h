@@ -7,8 +7,7 @@ class NRF24 {
 public:
     // The nRF24L01+ supports transfers from 1 to 32 bytes, but Sparkfun's
     // "Nordic Serial Interface Board" (http://www.sparkfun.com/products/9019)
-    // only handles 4 byte transfers in the ATMega code.
-    static constexpr int TRANSFER_SIZE = 4;
+    static constexpr int TRANSFER_SIZE = 1;
 
     NRF24();
 

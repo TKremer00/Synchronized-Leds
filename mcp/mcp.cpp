@@ -24,7 +24,7 @@ MCP::MCP()
     m_spi.format(8, 0);
 
     reset_registers();
-    turn_on_led(m_current_lighted_led);
+    turn_on_led(PinNumber::PIN_ONE);
 }
 
 bool MCP::next_button_pressed() {
@@ -62,36 +62,78 @@ bool MCP::check_button_with_debounce(std::function<bool()> is_button_pressed, bo
     return false;
 }
 
-void MCP::turn_on_led(uint8_t pin_number) {
-    MBED_ASSERT(pin_number <= AMOUNT_OF_LEDS);
+void MCP::turn_on_led(PinNumber pin) {
 
-    m_current_lighted_led = pin_number;
+
+    uint8_t pin_number = 255;
+
+    switch(pin) {
+        case PIN_ONE: {
+            pin_number = 0;
+            break;
+        }
+        case PIN_TWO: {
+            pin_number = 1;
+            break;
+        }
+        case PIN_THREE: {
+            pin_number = 2;
+            break;
+        }
+        case PIN_FOUR: {
+            pin_number = 3;
+            break;
+        }
+        case PIN_FIVE: {
+            pin_number = 4;
+            break;
+        }
+        case PIN_SIX: {
+            pin_number = 5;
+            break;
+        }
+        default: 
+            error("No known pin number in turn_on_led");
+            break;
+    }
+
+    m_current_lighted_led = pin;
     printf("Writing pin number %d \r\n", pin_number);
 
     set_register(MCP23S08_GPIO, ~(1 << pin_number));
 }
 
-uint8_t MCP::get_current_lighted_led() {
+PinNumber MCP::get_current_lighted_led() {
     return m_current_lighted_led;
 }
 
-uint8_t MCP::get_next_led(Direction direction) {
+PinNumber MCP::get_next_led(Direction direction) {
     switch (direction) {
         case FORWARDS: {
-
-            if(m_current_lighted_led == AMOUNT_OF_LEDS) {
-                return 0;
+            switch(m_current_lighted_led) {
+                case PIN_ONE: return PIN_TWO;
+                case PIN_TWO: return PIN_THREE;
+                case PIN_THREE: return PIN_FOUR;
+                case PIN_FOUR: return PIN_FIVE;
+                case PIN_FIVE: return PIN_SIX;
+                case PIN_SIX: return PIN_ONE;
+                default: 
+                    error("No known pin number in turn_on_led");
+                    break;
             }
-
-            return m_current_lighted_led + 1;
         }
         case BACKWARDS: {
-
-            if(m_current_lighted_led == 0) {
-                return AMOUNT_OF_LEDS;
+            switch(m_current_lighted_led) {
+                case PIN_ONE: return PIN_SIX;
+                case PIN_TWO: return PIN_ONE;
+                case PIN_THREE: return PIN_TWO;
+                case PIN_FOUR: return PIN_THREE;
+                case PIN_FIVE: return PIN_FOUR;
+                case PIN_SIX: return PIN_FIVE;
+                default: 
+                    error("No known pin number in turn_on_led");
+                    break;
             }
-
-            return m_current_lighted_led - 1;
         }
         default: error("Case for direction not handled in get_next_led");
     }
