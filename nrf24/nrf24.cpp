@@ -1,4 +1,5 @@
 #include "nrf24.h"
+#include <cstdio>
 
 
 #define MOSI_PIN    D11
@@ -7,10 +8,12 @@
 #define CSN_PIN     D8
 #define CE_PIN      D9
 #define IRQ_PIN     D7
+#define MAX_BYTES_NRF_CAN_HANDLE    32
 
 NRF24::NRF24()
     : m_nrf_comm(MOSI_PIN, MISO_PIN, SCK_PIN, CSN_PIN, CE_PIN, IRQ_PIN)
 {
+    MBED_ASSERT(TRANSFER_SIZE <= MAX_BYTES_NRF_CAN_HANDLE);
     // NOTE: this is to fix the power up, getting stuck
     // Don't know why, but is a fix :)
     ////////////////////////////////////////////
@@ -20,32 +23,49 @@ NRF24::NRF24()
 
     m_nrf_comm.powerUp();
 
-    print_nrf_info();
+
 
     m_nrf_comm.setTransferSize(TRANSFER_SIZE);
+    m_nrf_comm.setRfFrequency(2500);
+    m_nrf_comm.setRfOutputPower(-12);
+
+    print_nrf_info();
 
     m_nrf_comm.setReceiveMode();
     m_nrf_comm.enable();
 }
 
-uint8_t NRF24::read_acknowledgement() {
+LedPackage NRF24::read_acknowledgement() {
     return receive_incoming_data();
 }
 
 int NRF24::send_led_update(uint8_t pin) {
-    // NOTE: this could always fail, 
-    // but we want to make sure we don't 
-    // send more bytes than the NRF can read
-    MBED_ASSERT(sizeof(pin) == TRANSFER_SIZE);
+    char* data = new char[TRANSFER_SIZE];
+    encode_package(pin, data);
 
-    char pin_number = static_cast<char>(pin);
+    printf("Sending pin_number %d \r\n", pin);
 
-    printf("Sending pin_number %d \r\n", pin_number);
+    auto send_bytes = m_nrf_comm.write(NRF24L01P_PIPE_P0, data, sizeof(TRANSFER_SIZE));
 
-    return m_nrf_comm.write(NRF24L01P_PIPE_P0, &pin_number, sizeof(pin));
+    m_nrf_comm.setReceiveMode();
+
+    return send_bytes;
 }
 
-uint8_t NRF24::receive_led_update() {
+int NRF24::send_acknowledgement(LedPackage acknowledgement_package) {
+    char* data = new char[TRANSFER_SIZE];
+    encode_package(acknowledgement_package, data);
+
+    printf("Sending acknowledgement with pin number %d \r\n", acknowledgement_package.pin_number);
+
+    auto send_bytes = m_nrf_comm.write(NRF24L01P_PIPE_P0, data, sizeof(TRANSFER_SIZE));
+
+    m_nrf_comm.setReceiveMode();
+
+    return send_bytes;
+}
+
+LedPackage NRF24::receive_led_update() {
     return receive_incoming_data();
 }
 
@@ -69,22 +89,44 @@ uint8_t NRF24::number_from_char_array(char data[], int size) {
     return number;
 }
 
-uint8_t NRF24::receive_incoming_data() {
+LedPackage NRF24::receive_incoming_data() {
     // FIXME: check the crc, to ensure the data is valid
     char rxData[TRANSFER_SIZE];
     
     if(!m_nrf_comm.readable()) {
-        return std::numeric_limits<uint8_t>::max();
+        return LedPackage {
+            false,
+            std::numeric_limits<uint8_t>::max(),
+        };
     }
     printf("Receiving bytes \r\n");
     m_nrf_comm.read(NRF24L01P_PIPE_P0, rxData, TRANSFER_SIZE);
+
+    LedPackage package = decode_package(rxData);
+    return package;
+}
+
+void NRF24::encode_package(uint8_t pin, char* data) {
+    LedPackage package {
+        false,
+        pin // Pin number
+        // TODO: crc
+    };
     
+    encode_package(package, data);
+}
 
-    auto number = number_from_char_array(rxData, TRANSFER_SIZE);
+void NRF24::encode_package(LedPackage led_package, char* data) {
+    MBED_ASSERT(sizeof(led_package) <= TRANSFER_SIZE);
+    std::memcpy(data, &led_package, sizeof(led_package));
+}
 
-    printf("Received: %d \r\n", number);
+LedPackage NRF24::decode_package(char *data){
+    LedPackage received_package;
 
-    return number;
+    std::memcpy(&received_package, data, sizeof(LedPackage));
+
+    return received_package;
 }
 
 void NRF24::send_data(int pipe, char *data, int count) {

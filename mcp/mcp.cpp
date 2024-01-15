@@ -20,7 +20,7 @@ MCP::MCP()
       m_nCS(CSN_PIN)
 {
 
-    m_spi.frequency(MCP_SPI_MAX_DATA_RATE);
+    m_spi.frequency(MCP_SPI_MAX_DATA_RATE / 5);
     m_spi.format(8, 0);
 
     reset_registers();
@@ -123,6 +123,7 @@ PinNumber MCP::get_next_led(Direction direction) {
             }
         }
         case BACKWARDS: {
+            
             switch(m_current_lighted_led) {
                 case PIN_ONE: return PIN_SIX;
                 case PIN_TWO: return PIN_ONE;
@@ -161,8 +162,8 @@ int MCP::get_register(uint8_t reg_address) {
     
     m_spi.write((MCP23S08_ADDR << 1) | 0x01);
     m_spi.write(reg_address);
-    auto reponse = m_spi.write(0x00);
+    auto response = m_spi.write(0x00);
     m_nCS = 1;
 
-    return reponse;
+    return response;
 }

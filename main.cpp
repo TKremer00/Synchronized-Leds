@@ -21,29 +21,30 @@
 //         // Toggle LED1 (to help debug Host -> nRF24L01+ communication)
 //     }
 // }
-#define MAX_ACKNOWLEDGMENT_TIMEOUT_S    10
-#define SEND_DELAY_S    1000
+#define MAX_ACKNOWLEDGMENT_TIMEOUT_S    0.40
+#define SEND_DELAY_MS    150
 
-bool send_pin_update(NRF24& nrf, uint8_t new_pin_number) {
+void send_pin_update(NRF24& nrf, uint8_t new_pin_number) {
+    while(true) {
+        nrf.send_led_update(new_pin_number);
 
-    nrf.send_led_update(new_pin_number);
+        ThisThread::sleep_for(SEND_DELAY_MS);
 
-    ThisThread::sleep_for(SEND_DELAY_S);
 
-    Timer timer;
-    timer.start();
 
-    while(timer.read() < MAX_ACKNOWLEDGMENT_TIMEOUT_S){
-        uint8_t received_pin_number = nrf.read_acknowledgement();
+        Timer timer;
+        timer.start();
 
-        if(received_pin_number != std::numeric_limits<uint8_t>::max()) {
-            return received_pin_number == new_pin_number;
-        }        
+        while(timer.read() < MAX_ACKNOWLEDGMENT_TIMEOUT_S){
+            LedPackage received_pin_number = nrf.read_acknowledgement();
+            if(received_pin_number.is_acknowledgement) {
+                printf("Recieved acknowledgement %d %d \r\n", received_pin_number.pin_number, received_pin_number.is_acknowledgement);
+                return;
+            }        
+        }
+
+        printf("No acknowledgement receive within %fs trying again \r\n", MAX_ACKNOWLEDGMENT_TIMEOUT_S);
     }
-
-    printf("No acknowledgement receive within %ds \r\n", MAX_ACKNOWLEDGMENT_TIMEOUT_S);
-
-    return false;
 }
 
 int main() {
@@ -56,35 +57,35 @@ int main() {
     int txDataCnt = 0;
     int rxDataCnt = 0;
     
-    // TODO: this does hardfault some time, need to look into it.
+    // TODO: this does hard fault some time, need to look into it.
 
     while (1) {
         if(mcp.next_button_pressed()) {
             printf("NEXT Pressed \r\n");
             
             auto new_pin_number = mcp.get_next_led(Direction::FORWARDS); 
-            if(send_pin_update(nrf, new_pin_number)) {
-                mcp.turn_on_led(new_pin_number);
-            }
+            send_pin_update(nrf, new_pin_number);
+            mcp.turn_on_led(new_pin_number);
         }
 
         if(mcp.previous_button_pressed()) {
             printf("PREVIOUS Pressed \r\n");
 
             auto new_pin_number = mcp.get_next_led(Direction::BACKWARDS);
-            if(send_pin_update(nrf, new_pin_number)){
-                mcp.turn_on_led(new_pin_number);
-            }
+            send_pin_update(nrf, new_pin_number);
+            mcp.turn_on_led(new_pin_number);
         }
 
-        uint8_t received_bytes = nrf.receive_led_update();
-        if(received_bytes != std::numeric_limits<uint8_t>::max()) {
-            ThisThread::sleep_for(SEND_DELAY_S * 2);
+        LedPackage received_package = nrf.receive_led_update(); // 60 - false
+        if(received_package.pin_number != std::numeric_limits<uint8_t>::max()) {
+            printf("send it!!! \r\n");
+            ThisThread::sleep_for(SEND_DELAY_MS);
             // we got a pin update, now we need to send it back
-            auto bytes_written = nrf.send_led_update(received_bytes);
+            received_package.is_acknowledgement = true;
+            auto bytes_written = nrf.send_acknowledgement(received_package);
             if(bytes_written > 0) {
                 // we did send the led update back as acknowledgment, and we did send more than 0 bytes.
-                mcp.turn_on_led(static_cast<PinNumber>(received_bytes));
+                mcp.turn_on_led(static_cast<PinNumber>(received_package.pin_number));
             }
         }
     }
