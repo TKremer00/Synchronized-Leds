@@ -110,7 +110,6 @@ void NRF24::encode_package(uint8_t pin, char* data) {
     LedPackage package {
         false,
         pin // Pin number
-        // TODO: crc
     };
     
     encode_package(package, data);

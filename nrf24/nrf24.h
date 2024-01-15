@@ -6,7 +6,6 @@
 struct LedPackage {
     bool is_acknowledgement;
     uint8_t pin_number;
-    // TODO: crc
 };
 
 class NRF24 {
