@@ -56,7 +56,6 @@ int main() {
 
         LedPackage received_package = nrf.receive_led_update(); // 60 - false
         if(received_package.pin_number != std::numeric_limits<uint8_t>::max()) {
-            printf("send it!!! \r\n");
             ThisThread::sleep_for(SEND_DELAY_MS);
             // we got a pin update, now we need to send it back
             received_package.is_acknowledgement = true;

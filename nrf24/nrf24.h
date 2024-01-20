@@ -31,9 +31,7 @@ public:
     * @return the pin number of the other NRF24, if fails return max size of uint8_t.
     */
     LedPackage receive_led_update();
-    
-    // FIXME: remove this code, is only to test the hello world.
-    void send_data(int pipe, char *data, int count);
+
 private:
     void print_nrf_info();
 

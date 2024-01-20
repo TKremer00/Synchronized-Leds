@@ -90,7 +90,6 @@ uint8_t NRF24::number_from_char_array(char data[], int size) {
 }
 
 LedPackage NRF24::receive_incoming_data() {
-    // FIXME: check the crc, to ensure the data is valid
     char rxData[TRANSFER_SIZE];
     
     if(!m_nrf_comm.readable()) {
@@ -126,8 +125,4 @@ LedPackage NRF24::decode_package(char *data){
     std::memcpy(&received_package, data, sizeof(LedPackage));
 
     return received_package;
-}
-
-void NRF24::send_data(int pipe, char *data, int count) {
-    m_nrf_comm.write(pipe, data, count);
 }
