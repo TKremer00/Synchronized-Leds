@@ -1,13 +1,14 @@
-@startuml
+@startuml "First implementation"
 
 participant "NRF24 A" as nrfA
 participant "NRF24 B" as nrfB
 
-nrfA -> nrfB : Send led update
-nrfB -> nrfA : Received led update (Acknowledgement)
-nrfB -> nrfB : check if we wrote bytes
-nrfB -> nrfB : if we wrote bytes update led
-nrfA -> nrfA : if received led uppdate returned the same number turn on led
-
+loop until package arives
+nrfA -x nrfB : send update of led
+nrfA -> nrfB : send update of led
+nrfB -x nrfA : send acknowledgement
+nrfA -> nrfB : send update of led
+nrfB -> nrfA : send acknowledgement
+end
 
 @enduml
