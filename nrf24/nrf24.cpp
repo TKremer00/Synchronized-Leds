@@ -1,7 +1,6 @@
 #include "nrf24.h"
 #include <cstdio>
 
-
 #define MOSI_PIN    D11
 #define MISO_PIN    D12
 #define SCK_PIN     D13
@@ -22,8 +21,6 @@ NRF24::NRF24()
     ////////////////////////////////////////////
 
     m_nrf_comm.powerUp();
-
-
 
     m_nrf_comm.setTransferSize(TRANSFER_SIZE);
     m_nrf_comm.setRfFrequency(2500);
@@ -81,8 +78,7 @@ void NRF24::print_nrf_info() {
 uint8_t NRF24::number_from_char_array(char data[], int size) {
     uint8_t number = 0;
 
-    for (int i = 0; i < size; i++) 
-    {
+    for (int i = 0; i < size; i++) {
         number |= data[i] << i;
     }
 

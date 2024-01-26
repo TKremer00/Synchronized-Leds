@@ -63,8 +63,6 @@ bool MCP::check_button_with_debounce(std::function<bool()> is_button_pressed, bo
 }
 
 void MCP::turn_on_led(PinNumber pin) {
-
-
     uint8_t pin_number = 255;
 
     switch(pin) {
@@ -123,7 +121,6 @@ PinNumber MCP::get_next_led(Direction direction) {
             }
         }
         case BACKWARDS: {
-            
             switch(m_current_lighted_led) {
                 case PIN_ONE: return PIN_SIX;
                 case PIN_TWO: return PIN_ONE;
